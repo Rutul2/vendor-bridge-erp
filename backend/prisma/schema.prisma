@@ -1,0 +1,280 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum RoleName {
+  ADMIN
+  PROCUREMENT_OFFICER
+  MANAGER
+  VENDOR
+}
+
+enum RfqStatus {
+  DRAFT
+  OPEN
+  UNDER_REVIEW
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum QuotationStatus {
+  PENDING
+  SUBMITTED
+  APPROVED
+  REJECTED
+}
+
+enum PurchaseOrderStatus {
+  CREATED
+  SENT
+  CONFIRMED
+  PARTIALLY_DELIVERED
+  COMPLETED
+  CANCELLED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum NotificationType {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+}
+
+enum ApprovalStatus {
+  APPROVED
+  REJECTED
+}
+
+enum VendorStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
+model Role {
+  id    String   @id @default(uuid())
+  name  RoleName @unique
+  users User[]
+}
+
+model User {
+  id              String          @id @default(uuid())
+  name            String
+  email           String          @unique
+  password_hash   String
+  role            Role            @relation(fields: [role_id], references: [id])
+  role_id         String
+  is_active       Boolean         @default(true)
+  created_at      DateTime        @default(now())
+  updated_at      DateTime        @updatedAt
+  activity_logs   ActivityLog[]
+  notifications   Notification[]
+  purchase_orders PurchaseOrder[] @relation("generatedBy")
+  approvals       Approval[]
+  created_rfqs    Rfq[]
+}
+
+model Vendor {
+  id              String          @id @default(uuid())
+  company_name    String
+  vendor_code     String          @unique
+  category        String
+  gst_number      String?
+  email           String
+  phone           String?
+  address         String?
+  rating          Float?          @default(0)
+  status          VendorStatus    @default(ACTIVE)
+  deleted_at      DateTime?
+  created_at      DateTime        @default(now())
+  updated_at      DateTime        @updatedAt
+  rfq_vendors     RfqVendor[]
+  quotations      Quotation[]
+  purchase_orders PurchaseOrder[]
+  invoices        Invoice[]
+}
+
+model Rfq {
+  id            String       @id @default(uuid())
+  title         String
+  description   String?
+  deadline      DateTime
+  created_by    String
+  status        RfqStatus    @default(DRAFT)
+  created_at    DateTime     @default(now())
+  updated_at    DateTime     @updatedAt
+  deleted_at    DateTime?
+  items         RfqItem[]
+  vendors       RfqVendor[]
+  quotations    Quotation[]
+  attachments   Attachment[]
+  createdByUser User         @relation(fields: [created_by], references: [id])
+
+  @@index([status])
+}
+
+model RfqItem {
+  id              String   @id @default(uuid())
+  rfq             Rfq      @relation(fields: [rfq_id], references: [id])
+  rfq_id          String
+  product_name    String
+  description     String?
+  quantity        Int
+  unit            String
+  estimated_price Decimal  @db.Decimal(10, 2)
+  updated_at      DateTime @updatedAt
+}
+
+model RfqVendor {
+  id                String   @id @default(uuid())
+  rfq               Rfq      @relation(fields: [rfq_id], references: [id])
+  rfq_id            String
+  vendor            Vendor   @relation(fields: [vendor_id], references: [id])
+  vendor_id         String
+  invitation_status String   @default("PENDING")
+  invited_at        DateTime @default(now())
+
+  @@unique([rfq_id, vendor_id])
+}
+
+model Quotation {
+  id             String          @id @default(uuid())
+  rfq            Rfq             @relation(fields: [rfq_id], references: [id])
+  rfq_id         String
+  vendor         Vendor          @relation(fields: [vendor_id], references: [id])
+  vendor_id      String
+  total_amount   Decimal         @db.Decimal(10, 2)
+  delivery_days  Int
+  notes          String?
+  status         QuotationStatus @default(PENDING)
+  submitted_at   DateTime?
+  created_at     DateTime        @default(now())
+  updated_at     DateTime        @updatedAt
+  deleted_at     DateTime?
+  items          QuotationItem[]
+  approvals      Approval[]
+  purchase_order PurchaseOrder?
+
+  @@unique([rfq_id, vendor_id])
+  @@index([status])
+}
+
+model QuotationItem {
+  id           String    @id @default(uuid())
+  quotation    Quotation @relation(fields: [quotation_id], references: [id])
+  quotation_id String
+  product_name String
+  quantity     Int
+  unit_price   Decimal   @db.Decimal(10, 2)
+  subtotal     Decimal   @db.Decimal(10, 2)
+  updated_at   DateTime  @updatedAt
+}
+
+model Approval {
+  id           String         @id @default(uuid())
+  quotation    Quotation      @relation(fields: [quotation_id], references: [id])
+  quotation_id String
+  approved_by  String
+  status       ApprovalStatus
+  remarks      String?
+  approved_at  DateTime       @default(now())
+  updated_at   DateTime       @updatedAt
+  approver     User           @relation(fields: [approved_by], references: [id])
+}
+
+model PurchaseOrder {
+  id           String              @id @default(uuid())
+  po_number    String              @unique
+  quotation    Quotation           @relation(fields: [quotation_id], references: [id])
+  quotation_id String              @unique
+  vendor       Vendor              @relation(fields: [vendor_id], references: [id])
+  vendor_id    String
+  generated_by String
+  status       PurchaseOrderStatus @default(CREATED)
+  created_at   DateTime            @default(now())
+  updated_at   DateTime            @updatedAt
+  deleted_at   DateTime?
+  items        PurchaseOrderItem[]
+  generatedBy  User                @relation("generatedBy", fields: [generated_by], references: [id])
+  invoice      Invoice?
+}
+
+model PurchaseOrderItem {
+  id                String        @id @default(uuid())
+  purchase_order    PurchaseOrder @relation(fields: [purchase_order_id], references: [id])
+  purchase_order_id String
+  product_name      String
+  quantity          Int
+  unit_price        Decimal       @db.Decimal(10, 2)
+  tax               Decimal       @db.Decimal(10, 2)
+  subtotal          Decimal       @db.Decimal(10, 2)
+  updated_at        DateTime      @updatedAt
+}
+
+model Invoice {
+  id                String        @id @default(uuid())
+  invoice_number    String        @unique
+  purchase_order    PurchaseOrder @relation(fields: [purchase_order_id], references: [id])
+  purchase_order_id String        @unique
+  vendor            Vendor        @relation(fields: [vendor_id], references: [id])
+  vendor_id         String
+  tax_amount        Decimal       @db.Decimal(10, 2)
+  total_amount      Decimal       @db.Decimal(10, 2)
+  status            InvoiceStatus @default(DRAFT)
+  pdf_url           String?
+  sent_at           DateTime?
+  created_at        DateTime      @default(now())
+  updated_at        DateTime      @updatedAt
+  deleted_at        DateTime?
+}
+
+model Notification {
+  id         String           @id @default(uuid())
+  user       User             @relation(fields: [user_id], references: [id])
+  user_id    String
+  title      String
+  message    String
+  type       NotificationType @default(INFO)
+  is_read    Boolean          @default(false)
+  created_at DateTime         @default(now())
+  updated_at DateTime         @updatedAt
+}
+
+model ActivityLog {
+  id          String   @id @default(uuid())
+  user        User     @relation(fields: [user_id], references: [id])
+  user_id     String
+  entity_type String
+  entity_id   String
+  action      String
+  old_data    Json?
+  new_data    Json?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  @@index([entity_type, entity_id])
+}
+
+model Attachment {
+  id         String   @id @default(uuid())
+  rfq        Rfq      @relation(fields: [rfq_id], references: [id])
+  rfq_id     String
+  file_name  String
+  file_url   String
+  created_at DateTime @default(now())
+}
