@@ -29,3 +29,12 @@ export const createNewPurchaseOrder = async ({ quotation_id, vendor_id, items },
   await logActivity({ user_id: user.id, entity_type: 'PURCHASE_ORDER', entity_id: order.id, action: 'CREATE', new_data: order });
   return order;
 };
+
+export const updatePurchaseOrderStatus = async (id, status, user) => {
+  const existing = await findPurchaseOrderById(id);
+  if (!existing) throw { statusCode: 404, message: 'Purchase order not found' };
+  
+  const updated = await updatePurchaseOrder(id, { status });
+  await logActivity({ user_id: user.id, entity_type: 'PURCHASE_ORDER', entity_id: id, action: `UPDATE_STATUS_${status}`, old_data: existing, new_data: updated });
+  return updated;
+};

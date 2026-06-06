@@ -25,5 +25,10 @@ export const countPurchaseOrders = async ({ search, status, vendor_id }) => pris
   ],
 }});
 
-export const findPurchaseOrderById = async (id) => prisma.purchaseOrder.findUnique({ where: { id }, include: { items: true, vendor: true, quotation: true, generatedBy: true } });
+export const findPurchaseOrderById = async (id) => prisma.purchaseOrder.findUnique({ 
+  where: { id },
+  include: { items: true, vendor: true, quotation: true, generatedBy: true }
+});
+
 export const createPurchaseOrder = async (data) => prisma.purchaseOrder.create({ data });
+export const updatePurchaseOrder = async (id, data) => prisma.purchaseOrder.update({ where: { id }, data });

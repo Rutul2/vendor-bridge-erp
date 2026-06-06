@@ -11,3 +11,5 @@ export const findNotifications = async ({ skip, take, user_id, is_read }) => {
 export const countNotifications = async ({ user_id, is_read }) => prisma.notification.count({ where: { user_id, ...(is_read !== undefined ? { is_read: is_read === 'true' } : {}) } });
 export const findNotificationById = async (id, user_id) => prisma.notification.findUnique({ where: { id } });
 export const markAsRead = async (id) => prisma.notification.update({ where: { id }, data: { is_read: true } });
+export const markAllAsRead = async (user_id) => prisma.notification.updateMany({ where: { user_id, is_read: false }, data: { is_read: true } });
+export const createNotification = async (data) => prisma.notification.create({ data });

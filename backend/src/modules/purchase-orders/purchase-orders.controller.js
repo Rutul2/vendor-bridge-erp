@@ -1,5 +1,5 @@
 import { successResponse } from '../../utils/response.js';
-import { createNewPurchaseOrder, getPurchaseOrder, listPurchaseOrders } from './purchase-orders.service.js';
+import { createNewPurchaseOrder, getPurchaseOrder, listPurchaseOrders, updatePurchaseOrderStatus } from './purchase-orders.service.js';
 
 export const listPurchaseOrdersHandler = async (req, res) => {
   const data = await listPurchaseOrders(req.query);
@@ -14,4 +14,9 @@ export const getPurchaseOrderHandler = async (req, res) => {
 export const createPurchaseOrderHandler = async (req, res) => {
   const data = await createNewPurchaseOrder(req.body, req.user);
   return successResponse(res, 'Purchase order created successfully', data);
+};
+
+export const updatePurchaseOrderStatusHandler = async (req, res) => {
+  const data = await updatePurchaseOrderStatus(req.params.id, req.body.status, req.user);
+  return successResponse(res, 'Purchase order status updated successfully', data);
 };

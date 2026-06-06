@@ -53,6 +53,15 @@ export const emailInvoice = async (id, payload) => {
     html: `${html}<p>${payload.message || ''}</p>`,
   });
   const updated = await updateInvoice(id, { status: 'SENT', sent_at: new Date() });
-  await logActivity({ user_id: null, entity_type: 'INVOICE', entity_id: updated.id, action: 'EMAIL', new_data: updated });
+  await logActivity({ user_id: user?.id, entity_type: 'INVOICE', entity_id: updated.id, action: 'EMAIL', new_data: updated });
+  return updated;
+};
+
+export const updateInvoiceStatus = async (id, status, user) => {
+  const existing = await findInvoiceById(id);
+  if (!existing) throw { statusCode: 404, message: 'Invoice not found' };
+  
+  const updated = await updateInvoice(id, { status });
+  await logActivity({ user_id: user.id, entity_type: 'INVOICE', entity_id: id, action: `UPDATE_STATUS_${status}`, old_data: existing, new_data: updated });
   return updated;
 };

@@ -11,6 +11,11 @@ export const getUserHandler = async (req, res) => {
   return successResponse(res, 'User retrieved successfully', data);
 };
 
+export const getMeHandler = async (req, res) => {
+  const data = await getUser(req.user.id);
+  return successResponse(res, 'User profile retrieved successfully', data);
+};
+
 export const createUserHandler = async (req, res) => {
   const data = await createNewUser(req.body);
   return successResponse(res, 'User created successfully', data);

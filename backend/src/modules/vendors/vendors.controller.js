@@ -12,16 +12,16 @@ export const getVendorHandler = async (req, res) => {
 };
 
 export const createVendorHandler = async (req, res) => {
-  const data = await createNewVendor(req.body);
+  const data = await createNewVendor(req.body, req.user);
   return successResponse(res, 'Vendor created successfully', data);
 };
 
 export const updateVendorHandler = async (req, res) => {
-  const data = await updateExistingVendor(req.params.id, req.body);
+  const data = await updateExistingVendor(req.params.id, req.body, req.user);
   return successResponse(res, 'Vendor updated successfully', data);
 };
 
 export const deleteVendorHandler = async (req, res) => {
-  await removeVendor(req.params.id);
+  await removeVendor(req.params.id, req.user);
   return successResponse(res, 'Vendor deleted successfully');
 };
