@@ -1,12 +1,37 @@
-// src/features/vendors/VendorDetail.jsx
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Mail, Phone, MapPin, Star, ShoppingCart, Hash } from "lucide-react";
+import { useState, useEffect } from "react";
 import StatusBadge from "../../components/StatusBadge";
-import { MOCK_VENDORS } from "../../utils/mockData";
+import { vendorService } from "./vendorService";
 
 export default function VendorDetail() {
   const { id } = useParams();
-  const vendor = MOCK_VENDORS.find((v) => v._id === id);
+  const [vendor, setVendor] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchVendor = async () => {
+      try {
+        setLoading(true);
+        const res = await vendorService.getById(id);
+        setVendor(res.data);
+      } catch (err) {
+        setError(err.response?.data?.message || "Vendor not found");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchVendor();
+  }, [id]);
+
+  if (loading) {
+    return (
+      <div className="page-container text-center py-16 text-textMuted">
+        Loading...
+      </div>
+    );
+  }
 
   if (!vendor) {
     return (
@@ -15,7 +40,7 @@ export default function VendorDetail() {
           <ArrowLeft size={16} /> Back to Vendors
         </Link>
         <div className="card text-center py-16">
-          <p className="text-textMuted">Vendor not found</p>
+          <p className="text-textMuted">{error || "Vendor not found"}</p>
         </div>
       </div>
     );
@@ -23,7 +48,7 @@ export default function VendorDetail() {
 
   return (
     <div className="page-container">
-      <Link to="/vendors" className="inline-flex items-center gap-2 text-primary-400 hover:text-primary-300 text-sm">
+      <Link to="/vendors" className="inline-flex items-center gap-2 text-primary-400 hover:text-primary-300 text-sm mb-4">
         <ArrowLeft size={16} /> Back to Vendors
       </Link>
 
@@ -31,10 +56,10 @@ export default function VendorDetail() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div className="flex items-center gap-4">
             <div className="w-14 h-14 bg-gradient-to-br from-primary-400 to-primary-600 rounded-xl flex items-center justify-center text-white font-bold text-xl">
-              {vendor.companyName[0]}
+              {vendor.company_name?.[0]}
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white">{vendor.companyName}</h1>
+              <h1 className="text-xl font-bold text-white">{vendor.company_name}</h1>
               <p className="text-textMuted text-sm">{vendor.category}</p>
             </div>
           </div>
@@ -65,11 +90,11 @@ export default function VendorDetail() {
             <div className="space-y-3">
               <div className="flex items-center gap-3 text-sm">
                 <Hash size={15} className="text-textDim" />
-                <span className="text-textMuted font-mono">{vendor.gstNumber}</span>
+                <span className="text-textMuted font-mono">{vendor.gst_number}</span>
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <span className="text-textDim text-xs w-4">👤</span>
-                <span className="text-textMuted">{vendor.contactPerson}</span>
+                <span className="text-textMuted">{vendor.contact_person}</span>
               </div>
             </div>
           </div>
@@ -83,7 +108,7 @@ export default function VendorDetail() {
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <ShoppingCart size={15} className="text-textDim" />
-                <span className="text-textMuted">{vendor.totalOrders} total orders</span>
+                <span className="text-textMuted">{vendor.total_orders} total orders</span>
               </div>
             </div>
           </div>

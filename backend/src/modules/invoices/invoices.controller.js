@@ -1,6 +1,6 @@
 import fs from 'fs';
 import { successResponse } from '../../utils/response.js';
-import { createNewInvoice, emailInvoice, getInvoice, getInvoicePdf, listInvoices } from './invoices.service.js';
+import { createNewInvoice, emailInvoice, getInvoice, getInvoicePdf, listInvoices, updateInvoiceStatus } from './invoices.service.js';
 
 export const listInvoicesHandler = async (req, res) => {
   const data = await listInvoices(req.query);
@@ -26,6 +26,11 @@ export const getInvoicePdfHandler = async (req, res) => {
 };
 
 export const emailInvoiceHandler = async (req, res) => {
-  const data = await emailInvoice(req.params.id, req.body);
+  const data = await emailInvoice(req.params.id, req.body, req.user);
   return successResponse(res, 'Invoice email sent successfully', data);
+};
+
+export const updateInvoiceStatusHandler = async (req, res) => {
+  const data = await updateInvoiceStatus(req.params.id, req.body.status, req.user);
+  return successResponse(res, 'Invoice status updated successfully', data);
 };

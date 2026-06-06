@@ -1,4 +1,4 @@
-import { countNotifications, findNotificationById, findNotifications, markAsRead } from './notifications.repository.js';
+import { countNotifications, findNotificationById, findNotifications, markAsRead, createNotification, markAllAsRead } from './notifications.repository.js';
 
 export const listNotifications = async ({ page, limit, user_id, is_read }) => {
   const skip = (Number(page || 1) - 1) * Number(limit || 20);
@@ -12,4 +12,12 @@ export const readNotification = async (id, user_id) => {
   const notification = await findNotificationById(id, user_id);
   if (!notification || notification.user_id !== user_id) throw { statusCode: 404, message: 'Notification not found' };
   return markAsRead(id);
+};
+
+export const readAllNotifications = async (user_id) => {
+  return markAllAsRead(user_id);
+};
+
+export const createNewNotification = async (payload) => {
+  return createNotification(payload);
 };

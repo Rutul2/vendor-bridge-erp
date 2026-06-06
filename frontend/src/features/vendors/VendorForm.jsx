@@ -1,24 +1,23 @@
-// src/features/vendors/VendorForm.jsx
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
 const vendorSchema = z.object({
-  companyName: z.string().min(2, "Company name is required"),
+  company_name: z.string().min(2, "Company name is required"),
   category: z.string().min(1, "Category is required"),
-  gstNumber: z.string().min(15, "Valid GST number is required"),
-  contactPerson: z.string().min(2, "Contact person is required"),
+  gst_number: z.string().min(15, "Valid GST number is required"),
+  contact_person: z.string().min(2, "Contact person is required"),
   email: z.string().email("Invalid email"),
   phone: z.string().min(10, "Phone number is required"),
   address: z.string().min(5, "Address is required"),
   country: z.string().optional(),
-  status: z.enum(["Active", "Pending", "Blocked"]),
+  status: z.enum(["ACTIVE", "PENDING", "BLOCKED"]),
 });
 
 export default function VendorForm({ onSubmit, onCancel, initialData }) {
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm({
     resolver: zodResolver(vendorSchema),
-    defaultValues: initialData || { status: "Pending", country: "India" },
+    defaultValues: initialData || { status: "PENDING", country: "India" },
   });
 
   return (
@@ -26,8 +25,8 @@ export default function VendorForm({ onSubmit, onCancel, initialData }) {
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="input-label">Company Name *</label>
-          <input {...register("companyName")} className="input-field" placeholder="Acme Corp Pvt Ltd" />
-          {errors.companyName && <p className="text-danger-400 text-xs mt-1">{errors.companyName.message}</p>}
+          <input {...register("company_name")} className="input-field" placeholder="Acme Corp Pvt Ltd" />
+          {errors.company_name && <p className="text-danger-400 text-xs mt-1">{errors.company_name.message}</p>}
         </div>
         <div>
           <label className="input-label">Category *</label>
@@ -48,15 +47,15 @@ export default function VendorForm({ onSubmit, onCancel, initialData }) {
 
       <div>
         <label className="input-label">GST Number *</label>
-        <input {...register("gstNumber")} className="input-field font-mono" placeholder="27AABCI5678B1Z0" />
-        {errors.gstNumber && <p className="text-danger-400 text-xs mt-1">{errors.gstNumber.message}</p>}
+        <input {...register("gst_number")} className="input-field font-mono" placeholder="27AABCI5678B1Z0" />
+        {errors.gst_number && <p className="text-danger-400 text-xs mt-1">{errors.gst_number.message}</p>}
       </div>
 
       <div className="grid grid-cols-2 gap-4">
         <div>
           <label className="input-label">Contact Person *</label>
-          <input {...register("contactPerson")} className="input-field" placeholder="Rajesh Kumar" />
-          {errors.contactPerson && <p className="text-danger-400 text-xs mt-1">{errors.contactPerson.message}</p>}
+          <input {...register("contact_person")} className="input-field" placeholder="Rajesh Kumar" />
+          {errors.contact_person && <p className="text-danger-400 text-xs mt-1">{errors.contact_person.message}</p>}
         </div>
         <div>
           <label className="input-label">Email *</label>
@@ -74,9 +73,9 @@ export default function VendorForm({ onSubmit, onCancel, initialData }) {
         <div>
           <label className="input-label">Status</label>
           <select {...register("status")} className="input-field">
-            <option value="Active">Active</option>
-            <option value="Pending">Pending</option>
-            <option value="Blocked">Blocked</option>
+            <option value="ACTIVE">Active</option>
+            <option value="PENDING">Pending</option>
+            <option value="BLOCKED">Blocked</option>
           </select>
         </div>
       </div>

@@ -1,5 +1,4 @@
-// src/features/vendors/VendorList.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Plus, Eye } from "lucide-react";
 import SearchBar from "../../components/SearchBar";
@@ -7,35 +6,51 @@ import StatusBadge from "../../components/StatusBadge";
 import EmptyState from "../../components/EmptyState";
 import Modal from "../../components/Modal";
 import VendorForm from "./VendorForm";
-import { MOCK_VENDORS } from "../../utils/mockData";
+import { vendorService } from "./vendorService";
 
-const tabs = ["All", "Active", "Pending", "Blocked"];
+const tabs = ["All", "ACTIVE", "PENDING", "BLOCKED"];
 
 export default function VendorList() {
-  const [vendors, setVendors] = useState(MOCK_VENDORS);
+  const [vendors, setVendors] = useState([]);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("All");
   const [showForm, setShowForm] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  const filtered = vendors.filter((v) => {
-    const matchesSearch = v.companyName.toLowerCase().includes(search.toLowerCase()) ||
-      v.gstNumber.toLowerCase().includes(search.toLowerCase()) ||
-      v.category.toLowerCase().includes(search.toLowerCase());
-    const matchesTab = activeTab === "All" || v.status === activeTab;
-    return matchesSearch && matchesTab;
-  });
+  const fetchVendors = async () => {
+    try {
+      setLoading(true);
+      const data = await vendorService.getAll({ 
+        search, 
+        status: activeTab !== "All" ? activeTab : undefined 
+      });
+      setVendors(data.data?.items || []);
+    } catch (error) {
+      console.error("Failed to fetch vendors", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchVendors();
+  }, [search, activeTab]);
 
   const tabCounts = {
     All: vendors.length,
-    Active: vendors.filter(v => v.status === "Active").length,
-    Pending: vendors.filter(v => v.status === "Pending").length,
-    Blocked: vendors.filter(v => v.status === "Blocked").length,
+    ACTIVE: vendors.filter(v => v.status === "ACTIVE").length,
+    PENDING: vendors.filter(v => v.status === "PENDING").length,
+    BLOCKED: vendors.filter(v => v.status === "BLOCKED").length,
   };
 
-  const handleAddVendor = (data) => {
-    const newVendor = { ...data, _id: `v${Date.now()}`, rating: 0, totalOrders: 0, createdAt: new Date().toISOString().split("T")[0] };
-    setVendors([newVendor, ...vendors]);
-    setShowForm(false);
+  const handleAddVendor = async (data) => {
+    try {
+      await vendorService.create(data);
+      setShowForm(false);
+      fetchVendors();
+    } catch (error) {
+      console.error("Failed to add vendor", error);
+    }
   };
 
   return (
@@ -64,13 +79,13 @@ export default function VendorList() {
                 : "text-textMuted border-border hover:bg-surfaceHighlight"
             }`}
           >
-            {tab} ({tabCounts[tab]})
+            {tab}
           </button>
         ))}
       </div>
 
       {/* Table */}
-      <div className="card p-0 overflow-hidden">
+      <div className="card p-0 overflow-hidden mt-6">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead>
@@ -84,18 +99,20 @@ export default function VendorList() {
               </tr>
             </thead>
             <tbody>
-              {filtered.length === 0 ? (
+              {loading ? (
+                <tr><td colSpan="6" className="text-center py-8 text-textMuted">Loading...</td></tr>
+              ) : vendors.length === 0 ? (
                 <tr><td colSpan="6"><EmptyState title="No vendors found" description="Try adjusting your search or filters" /></td></tr>
               ) : (
-                filtered.map((v) => (
-                  <tr key={v._id} className="border-b border-border/50 hover:bg-surfaceHighlight/50 transition-colors">
-                    <td className="table-cell-primary">{v.companyName}</td>
+                vendors.map((v) => (
+                  <tr key={v.id} className="border-b border-border/50 hover:bg-surfaceHighlight/50 transition-colors">
+                    <td className="table-cell-primary">{v.company_name}</td>
                     <td className="table-cell">{v.category}</td>
-                    <td className="table-cell font-mono text-xs">{v.gstNumber}</td>
+                    <td className="table-cell font-mono text-xs">{v.gst_number}</td>
                     <td className="table-cell">{v.phone}</td>
                     <td className="table-cell"><StatusBadge status={v.status} /></td>
                     <td className="table-cell text-right">
-                      <Link to={`/vendors/${v._id}`} className="inline-flex items-center gap-1.5 text-primary-400 hover:text-primary-300 text-sm font-medium transition-colors">
+                      <Link to={`/vendors/${v.id}`} className="inline-flex items-center gap-1.5 text-primary-400 hover:text-primary-300 text-sm font-medium transition-colors">
                         <Eye size={14} /> View
                       </Link>
                     </td>

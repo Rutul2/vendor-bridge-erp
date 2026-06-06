@@ -9,6 +9,7 @@ export const useAuthStore = create(
       token: null,
       isAuthenticated: false,
       setToken: (token) => set({ token }),
+      updateUser: (userData) => set((state) => ({ user: { ...state.user, ...userData } })),
       login: (userData, token, refreshToken) => {
         localStorage.setItem('refreshToken', refreshToken);
         set({ user: userData, token, isAuthenticated: true });

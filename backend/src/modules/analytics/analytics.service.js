@@ -1,5 +1,5 @@
 import * as repo from './analytics.repository.js';
-
+import prisma from '../../config/database.js';
 export const getDashboardSummary = async () => {
   const totalVendors = await repo.countVendors();
   const activeRFQs = await repo.countActiveRfqs();

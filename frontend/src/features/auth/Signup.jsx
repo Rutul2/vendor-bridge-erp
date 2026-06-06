@@ -31,7 +31,22 @@ export default function Signup() {
   const onSubmit = async (data) => {
     try {
       setError("");
-      await authService.signup(data);
+      
+      const roleMap = {
+        "Vendor": "VENDOR",
+        "Officer": "PROCUREMENT_OFFICER",
+        "Manager": "MANAGER",
+        "Admin": "ADMIN"
+      };
+
+      const payload = {
+        name: `${data.firstName} ${data.lastName}`,
+        email: data.email,
+        password: data.password,
+        role: roleMap[data.role],
+      };
+
+      await authService.signup(payload);
       navigate("/login");
     } catch (err) {
       setError(err.response?.data?.message || "Signup failed");

@@ -1,17 +1,22 @@
-// src/features/rfqs/RFQCreate.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useNavigate } from "react-router-dom";
 import { rfqSchema } from "../../utils/schemas";
 import { Plus, X, Upload } from "lucide-react";
 import StepIndicator from "../../components/StepIndicator";
-import { MOCK_VENDORS } from "../../utils/mockData";
+import { rfqService } from "./rfqService";
+import { vendorService } from "../vendors/vendorService";
 
 export default function RFQCreate() {
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [selectedVendors, setSelectedVendors] = useState([]);
+  const [vendorsList, setVendorsList] = useState([]);
+
+  useEffect(() => {
+    vendorService.getAll({ status: 'ACTIVE' }).then(res => setVendorsList(res.data?.items || []));
+  }, []);
 
   const { register, control, handleSubmit, formState: { errors }, trigger, getValues } = useForm({
     resolver: zodResolver(rfqSchema),
@@ -38,16 +43,31 @@ export default function RFQCreate() {
 
   const toggleVendor = (vendor) => {
     setSelectedVendors((prev) =>
-      prev.find((v) => v._id === vendor._id)
-        ? prev.filter((v) => v._id !== vendor._id)
+      prev.find((v) => v.id === vendor.id)
+        ? prev.filter((v) => v.id !== vendor.id)
         : [...prev, vendor]
     );
   };
 
   const onSubmit = async (data) => {
-    data.assignedVendors = selectedVendors.map((v) => v._id);
-    console.log("RFQ created:", data);
-    navigate("/rfqs");
+    try {
+      const payload = {
+        title: data.title,
+        category: data.category,
+        deadline: new Date(data.deadline).toISOString(),
+        description: data.description,
+        items: data.lineItems.map(item => ({
+          item_name: item.item,
+          quantity: item.quantity,
+          unit: item.unit
+        })),
+        vendors: selectedVendors.map(v => v.id)
+      };
+      await rfqService.create(payload);
+      navigate("/rfqs");
+    } catch (error) {
+      console.error("Failed to create RFQ", error);
+    }
   };
 
   const values = getValues();
@@ -154,8 +174,8 @@ export default function RFQCreate() {
               <h3 className="text-base font-semibold text-white mb-3">Assign Vendors</h3>
               <div className="space-y-2">
                 {selectedVendors.map((v) => (
-                  <div key={v._id} className="flex items-center justify-between px-4 py-2.5 bg-surfaceHighlight rounded-lg border border-border">
-                    <span className="text-sm text-textMain">{v.companyName}</span>
+                  <div key={v.id} className="flex items-center justify-between px-4 py-2.5 bg-surfaceHighlight rounded-lg border border-border">
+                    <span className="text-sm text-textMain">{v.company_name}</span>
                     <button type="button" onClick={() => toggleVendor(v)} className="text-danger-400 hover:text-danger-300">
                       <X size={14} />
                     </button>
@@ -164,15 +184,15 @@ export default function RFQCreate() {
                 <div className="relative">
                   <select
                     onChange={(e) => {
-                      const vendor = MOCK_VENDORS.find((v) => v._id === e.target.value);
+                      const vendor = vendorsList.find((v) => v.id === e.target.value);
                       if (vendor) toggleVendor(vendor);
                       e.target.value = "";
                     }}
                     className="input-field"
                   >
                     <option value="">+ Add vendor</option>
-                    {MOCK_VENDORS.filter((v) => v.status === "Active" && !selectedVendors.find((sv) => sv._id === v._id)).map((v) => (
-                      <option key={v._id} value={v._id}>{v.companyName}</option>
+                    {vendorsList.filter((v) => !selectedVendors.find((sv) => sv.id === v.id)).map((v) => (
+                      <option key={v.id} value={v.id}>{v.company_name}</option>
                     ))}
                   </select>
                 </div>

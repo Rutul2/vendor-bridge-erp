@@ -257,8 +257,8 @@ model Notification {
 
 model ActivityLog {
   id          String   @id @default(uuid())
-  user        User     @relation(fields: [user_id], references: [id])
-  user_id     String
+  user        User?    @relation(fields: [user_id], references: [id])
+  user_id     String?
   entity_type String
   entity_id   String
   action      String

@@ -1,27 +1,48 @@
-// src/features/rfqs/RFQDetail.jsx
 import { useParams, Link } from "react-router-dom";
 import { ArrowLeft, Calendar, Tag, Users } from "lucide-react";
+import { useState, useEffect } from "react";
 import StatusBadge from "../../components/StatusBadge";
-import { MOCK_RFQS, MOCK_VENDORS } from "../../utils/mockData";
+import { rfqService } from "./rfqService";
 
 export default function RFQDetail() {
   const { id } = useParams();
-  const rfq = MOCK_RFQS.find((r) => r._id === id);
+  const [rfq, setRfq] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchRfq = async () => {
+      try {
+        setLoading(true);
+        const res = await rfqService.getById(id);
+        setRfq(res.data);
+      } catch (err) {
+        setError("RFQ not found");
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchRfq();
+  }, [id]);
+
+  if (loading) {
+    return <div className="page-container py-16 text-center text-textMuted">Loading...</div>;
+  }
 
   if (!rfq) {
     return (
       <div className="page-container">
         <Link to="/rfqs" className="inline-flex items-center gap-2 text-primary-400 text-sm"><ArrowLeft size={16} /> Back</Link>
-        <div className="card text-center py-16"><p className="text-textMuted">RFQ not found</p></div>
+        <div className="card text-center py-16"><p className="text-textMuted">{error}</p></div>
       </div>
     );
   }
 
-  const vendors = MOCK_VENDORS.filter((v) => rfq.assignedVendors.includes(v._id));
+  const vendors = rfq.vendors || [];
 
   return (
     <div className="page-container max-w-4xl mx-auto">
-      <Link to="/rfqs" className="inline-flex items-center gap-2 text-primary-400 hover:text-primary-300 text-sm">
+      <Link to="/rfqs" className="inline-flex items-center gap-2 text-primary-400 hover:text-primary-300 text-sm mb-4">
         <ArrowLeft size={16} /> Back to RFQs
       </Link>
 
@@ -50,15 +71,15 @@ export default function RFQDetail() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-border">
-                  <th className="table-header">Item</th>
-                  <th className="table-header">Quantity</th>
-                  <th className="table-header">Unit</th>
+                  <th className="table-header text-left">Item</th>
+                  <th className="table-header text-left">Quantity</th>
+                  <th className="table-header text-left">Unit</th>
                 </tr>
               </thead>
               <tbody>
-                {rfq.lineItems.map((item, i) => (
+                {rfq.items?.map((item, i) => (
                   <tr key={i} className="border-b border-border/50">
-                    <td className="table-cell-primary">{item.item}</td>
+                    <td className="table-cell-primary">{item.item_name}</td>
                     <td className="table-cell">{item.quantity}</td>
                     <td className="table-cell">{item.unit}</td>
                   </tr>
@@ -74,11 +95,11 @@ export default function RFQDetail() {
           </h3>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {vendors.map((v) => (
-              <div key={v._id} className="flex items-center gap-3 p-3 bg-surfaceHighlight rounded-lg border border-border">
-                <div className="w-8 h-8 rounded-lg bg-primary-500/10 flex items-center justify-center text-primary-400 text-xs font-bold">{v.companyName[0]}</div>
+              <div key={v.id} className="flex items-center gap-3 p-3 bg-surfaceHighlight rounded-lg border border-border">
+                <div className="w-8 h-8 rounded-lg bg-primary-500/10 flex items-center justify-center text-primary-400 text-xs font-bold">{v.vendor.company_name?.[0]}</div>
                 <div>
-                  <p className="text-sm font-medium text-textMain">{v.companyName}</p>
-                  <p className="text-xs text-textDim">{v.category}</p>
+                  <p className="text-sm font-medium text-textMain">{v.vendor.company_name}</p>
+                  <p className="text-xs text-textDim">{v.vendor.category}</p>
                 </div>
               </div>
             ))}

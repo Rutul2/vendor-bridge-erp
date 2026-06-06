@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useAuthStore } from '../store/authStore';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:4000/api',
   headers: {
     'Content-Type': 'application/json',
   },
@@ -28,9 +28,12 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       try {
         const refreshToken = localStorage.getItem('refreshToken');
-        const { data } = await axios.post(`${api.defaults.baseURL}/auth/refresh-token`, { token: refreshToken });
-        useAuthStore.getState().setToken(data.token);
-        originalRequest.headers.Authorization = `Bearer ${data.token}`;
+        if (!refreshToken) throw new Error('No refresh token');
+        
+        const { data } = await axios.post(`${api.defaults.baseURL}/auth/refresh-token`, { refreshToken });
+        const newAccessToken = data.data.accessToken;
+        useAuthStore.getState().setToken(newAccessToken);
+        originalRequest.headers.Authorization = `Bearer ${newAccessToken}`;
         return api(originalRequest);
       } catch (refreshError) {
         useAuthStore.getState().logout();

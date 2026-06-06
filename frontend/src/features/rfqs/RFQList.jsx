@@ -1,22 +1,36 @@
-// src/features/rfqs/RFQList.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { Plus, Eye, FileText } from "lucide-react";
 import SearchBar from "../../components/SearchBar";
 import StatusBadge from "../../components/StatusBadge";
 import EmptyState from "../../components/EmptyState";
-import { MOCK_RFQS } from "../../utils/mockData";
+import { rfqService } from "./rfqService";
 
 export default function RFQList() {
+  const [rfqs, setRfqs] = useState([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
-  const statuses = ["All", "Open", "Draft", "Closed"];
+  const [loading, setLoading] = useState(true);
+  
+  const statuses = ["All", "OPEN", "DRAFT", "CLOSED"];
 
-  const filtered = MOCK_RFQS.filter((rfq) => {
-    const matchesSearch = rfq.title.toLowerCase().includes(search.toLowerCase()) || rfq.category.toLowerCase().includes(search.toLowerCase());
-    const matchesStatus = statusFilter === "All" || rfq.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  useEffect(() => {
+    const fetchRfqs = async () => {
+      try {
+        setLoading(true);
+        const res = await rfqService.getAll({ 
+          search, 
+          status: statusFilter !== "All" ? statusFilter : undefined 
+        });
+        setRfqs(res.data?.items || []);
+      } catch (error) {
+        console.error("Failed to fetch RFQs", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchRfqs();
+  }, [search, statusFilter]);
 
   return (
     <div className="page-container">
@@ -42,7 +56,7 @@ export default function RFQList() {
         </div>
       </div>
 
-      <div className="card p-0 overflow-hidden">
+      <div className="card p-0 overflow-hidden mt-6">
         <table className="w-full">
           <thead>
             <tr className="border-b border-border bg-surface">
@@ -55,18 +69,20 @@ export default function RFQList() {
             </tr>
           </thead>
           <tbody>
-            {filtered.length === 0 ? (
+            {loading ? (
+              <tr><td colSpan="6" className="text-center py-8 text-textMuted">Loading...</td></tr>
+            ) : rfqs.length === 0 ? (
               <tr><td colSpan="6"><EmptyState icon={FileText} title="No RFQs found" /></td></tr>
             ) : (
-              filtered.map((rfq) => (
-                <tr key={rfq._id} className="border-b border-border/50 hover:bg-surfaceHighlight/50 transition-colors">
+              rfqs.map((rfq) => (
+                <tr key={rfq.id} className="border-b border-border/50 hover:bg-surfaceHighlight/50 transition-colors">
                   <td className="table-cell-primary">{rfq.title}</td>
                   <td className="table-cell">{rfq.category}</td>
                   <td className="table-cell">{new Date(rfq.deadline).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</td>
-                  <td className="table-cell">{rfq.quotationsReceived} received</td>
+                  <td className="table-cell">{rfq.quotations?.length || 0} received</td>
                   <td className="table-cell"><StatusBadge status={rfq.status} /></td>
                   <td className="table-cell text-right">
-                    <Link to={`/rfqs/${rfq._id}`} className="inline-flex items-center gap-1.5 text-primary-400 hover:text-primary-300 text-sm font-medium">
+                    <Link to={`/rfqs/${rfq.id}`} className="inline-flex items-center gap-1.5 text-primary-400 hover:text-primary-300 text-sm font-medium">
                       <Eye size={14} /> View
                     </Link>
                   </td>

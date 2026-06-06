@@ -26,8 +26,9 @@ export default function Login() {
   const onSubmit = async (data) => {
     try {
       setError("");
-      // Mock login for hackathon demo
-      login({ role: "Officer", name: "Demo Officer", email: data.email }, "fake-token", "fake-refresh");
+      const response = await authService.login(data);
+      const { user, accessToken, refreshToken } = response.data;
+      login(user, accessToken, refreshToken);
       navigate("/");
     } catch (err) {
       setError(err.response?.data?.message || "Login failed");
