@@ -21,4 +21,4 @@ const swaggerOptions = {
   apis: ['./src/modules/**/*.js'],
 };
 
-export default swaggerOptions;regular 
+export default swaggerOptions;

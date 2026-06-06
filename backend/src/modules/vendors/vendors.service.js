@@ -3,11 +3,6 @@ import { countVendors, createVendor, findVendorById, findVendors, softDeleteVend
 
 export const listVendors = async ({ page, limit, search, category, status }) => {
   const skip = (Number(page || 1) - 1) * Number(limit || 20);
-import { logActivity } from '../../utils/activityLogger.js';
-import { countVendors, createVendor, findVendorById, findVendors, softDeleteVendor, updateVendor } from './vendors.repository.js';
-
-export const listVendors = async ({ page, limit, search, category, status }) => {
-  const skip = (Number(page || 1) - 1) * Number(limit || 20);
   const take = Number(limit || 20);
   const items = await findVendors({ skip, take, search, category, status });
   const total = await countVendors({ search, category, status });
