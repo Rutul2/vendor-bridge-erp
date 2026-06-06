@@ -3,14 +3,14 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 
 const vendorSchema = z.object({
-  company_name: z.string().min(2, "Company name is required"),
-  category: z.string().min(1, "Category is required"),
-  gst_number: z.string().min(15, "Valid GST number is required"),
-  contact_person: z.string().min(2, "Contact person is required"),
-  email: z.string().email("Invalid email"),
-  phone: z.string().min(10, "Phone number is required"),
-  address: z.string().min(5, "Address is required"),
-  country: z.string().optional(),
+  company_name: z.string().trim().min(2, "Company name is required"),
+  category: z.string().trim().min(1, "Category is required"),
+  gst_number: z.string().trim().min(15, "Valid GST number is required"),
+  contact_person: z.string().trim().min(2, "Contact person is required"),
+  email: z.string().trim().email("Invalid email"),
+  phone: z.string().trim().min(10, "Phone number is required"),
+  address: z.string().trim().min(5, "Address is required"),
+  country: z.string().trim().optional(),
   status: z.enum(["ACTIVE", "PENDING", "BLOCKED"]),
 });
 

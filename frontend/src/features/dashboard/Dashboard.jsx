@@ -23,6 +23,7 @@ import StatsCard from "../../components/StatsCard";
 import StatusBadge from "../../components/StatusBadge";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import { dashboardService } from "./dashboardService";
+import { useAuthStore } from "../../store/authStore";
 
 const CustomTooltip = ({ active, payload, label }) => {
   if (active && payload?.length) {
@@ -39,6 +40,7 @@ const CustomTooltip = ({ active, payload, label }) => {
 };
 
 export default function Dashboard() {
+  const { user } = useAuthStore();
   const [stats, setStats] = useState(null);
   const [trends, setTrends] = useState([]);
   const [purchaseOrders, setPurchaseOrders] = useState([]);
@@ -49,34 +51,39 @@ export default function Dashboard() {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
+
+        // Only ADMIN and PROCUREMENT_OFFICER can fetch monthly trends
+        const canSeeTrends = user?.role === 'ADMIN' || user?.role === 'PROCUREMENT_OFFICER';
+
         const [summaryData, trendsData] = await Promise.all([
           dashboardService.getSummary(),
-          dashboardService.getMonthlyTrends(),
+          canSeeTrends ? dashboardService.getMonthlyTrends() : Promise.resolve({ data: [] }),
         ]);
 
         setStats({
-          activeRfqs: summaryData.data?.activeRfqs || 0,
-          activeRfqsTrend: summaryData.data?.activeRfqsTrend || 0,
-          pendingApprovals: summaryData.data?.pendingApprovals || 0,
-          pendingApprovalsTrend: summaryData.data?.pendingApprovalsTrend || 0,
-          posThisMonth: summaryData.data?.posThisMonth || 0,
-          posThisMonthTrend: summaryData.data?.posThisMonthTrend || 0,
-          monthlyInvoices: summaryData.data?.monthlyInvoices || 0,
-          monthlyInvoicesTrend: summaryData.data?.monthlyInvoicesTrend || 0,
+          activeRfqs:            summaryData.data?.activeRfqs ?? 0,
+          activeRfqsTrend:       summaryData.data?.activeRfqsTrend ?? 0,
+          pendingApprovals:      summaryData.data?.pendingApprovals ?? 0,
+          pendingApprovalsTrend: summaryData.data?.pendingApprovalsTrend ?? 0,
+          posThisMonth:          summaryData.data?.posThisMonth ?? 0,
+          posThisMonthTrend:     summaryData.data?.posThisMonthTrend ?? 0,
+          monthlyInvoices:       summaryData.data?.monthlyInvoices ?? 0,
+          monthlyInvoicesTrend:  summaryData.data?.monthlyInvoicesTrend ?? 0,
         });
 
         setTrends(trendsData.data || []);
         setPurchaseOrders(summaryData.data?.recentPurchaseOrders || []);
       } catch (err) {
-        console.error("Failed to fetch dashboard data:", err);
-        setError("Failed to load dashboard data");
+        console.error('Failed to fetch dashboard data:', err);
+        setError('Failed to load dashboard data');
       } finally {
         setLoading(false);
       }
     };
 
     fetchDashboardData();
-  }, []);
+  }, [user?.role]);
+
 
   if (loading) return <LoadingSpinner />;
   if (error)
@@ -92,7 +99,7 @@ export default function Dashboard() {
       <div>
         <h1 className="page-title">Dashboard</h1>
         <p className="page-subtitle">
-          Welcome back, Procurement Officer — Today's Overview
+          Welcome back, {user?.name || "User"} — Today's Overview
         </p>
       </div>
 
@@ -157,13 +164,13 @@ export default function Dashboard() {
                     className="border-b border-border/50 hover:bg-surfaceHighlight/50 transition-colors"
                   >
                     <td className="table-cell-primary">
-                      {po.poNumber || `PO-${po.id.slice(0, 8)}`}
+                      {po.po_number || `PO-${po.id.slice(0, 8)}`}
                     </td>
                     <td className="table-cell">
                       {po.vendor?.company_name || "Unknown Vendor"}
                     </td>
                     <td className="table-cell">
-                      ₹{(po.grandTotal || 0).toLocaleString("en-IN")}
+                      ₹{(po.quotation?.grand_total || 0).toLocaleString("en-IN")}
                     </td>
                     <td className="table-cell">
                       <StatusBadge status={po.status} />
@@ -176,8 +183,9 @@ export default function Dashboard() {
         </div>
 
         {/* Spending Trends Chart */}
-        <div className="lg:col-span-2 card">
-          <h2 className="text-lg font-semibold text-white mb-4">
+        {user?.role !== 'VENDOR' && (
+          <div className="lg:col-span-2 card">
+            <h2 className="text-lg font-semibold text-white mb-4">
             Spending Trends (6 months)
           </h2>
           <ResponsiveContainer width="100%" height={200}>
@@ -207,28 +215,35 @@ export default function Dashboard() {
             </BarChart>
           </ResponsiveContainer>
         </div>
+        )}
       </div>
 
       {/* Quick Actions */}
       <div className="flex flex-wrap gap-3">
-        <Link
-          to="/rfqs/create"
-          className="btn-primary inline-flex items-center gap-2"
-        >
-          <Plus size={16} /> New RFQ
-        </Link>
-        <Link
-          to="/vendors"
-          className="btn-secondary inline-flex items-center gap-2"
-        >
-          <Users size={16} /> Add Vendor
-        </Link>
-        <Link
-          to="/invoices"
-          className="btn-secondary inline-flex items-center gap-2"
-        >
-          <Receipt size={16} /> View Invoices
-        </Link>
+        {user?.role === 'PROCUREMENT_OFFICER' && (
+          <Link
+            to="/rfqs/create"
+            className="btn-primary inline-flex items-center gap-2"
+          >
+            <Plus size={16} /> New RFQ
+          </Link>
+        )}
+        {user?.role === "ADMIN" && (
+          <Link
+            to="/vendors"
+            className="btn-secondary inline-flex items-center gap-2"
+          >
+            <Users size={16} /> Add Vendor
+          </Link>
+        )}
+        {(user?.role === 'PROCUREMENT_OFFICER' || user?.role === 'ADMIN') && (
+          <Link
+            to="/invoices"
+            className="btn-secondary inline-flex items-center gap-2"
+          >
+            <Receipt size={16} /> View Invoices
+          </Link>
+        )}
       </div>
     </div>
   );

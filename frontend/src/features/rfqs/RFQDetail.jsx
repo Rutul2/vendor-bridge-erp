@@ -3,8 +3,10 @@ import { ArrowLeft, Calendar, Tag, Users } from "lucide-react";
 import { useState, useEffect } from "react";
 import StatusBadge from "../../components/StatusBadge";
 import { rfqService } from "./rfqService";
+import { useAuthStore } from "../../store/authStore";
 
 export default function RFQDetail() {
+  const { user } = useAuthStore();
   const { id } = useParams();
   const [rfq, setRfq] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -42,9 +44,16 @@ export default function RFQDetail() {
 
   return (
     <div className="page-container max-w-4xl mx-auto">
-      <Link to="/rfqs" className="inline-flex items-center gap-2 text-primary-400 hover:text-primary-300 text-sm mb-4">
-        <ArrowLeft size={16} /> Back to RFQs
-      </Link>
+      <div className="flex justify-between items-center mb-4">
+        <Link to="/rfqs" className="inline-flex items-center gap-2 text-primary-400 hover:text-primary-300 text-sm">
+          <ArrowLeft size={16} /> Back to RFQs
+        </Link>
+        {user?.role === 'VENDOR' && rfq?.status !== 'CLOSED' && (
+          <Link to={`/quotations/submit/${id}`} className="btn-primary inline-flex items-center gap-2 text-sm">
+            Submit Quotation
+          </Link>
+        )}
+      </div>
 
       <div className="card">
         <div className="flex items-start justify-between mb-6">
@@ -79,7 +88,7 @@ export default function RFQDetail() {
               <tbody>
                 {rfq.items?.map((item, i) => (
                   <tr key={i} className="border-b border-border/50">
-                    <td className="table-cell-primary">{item.item_name}</td>
+                    <td className="table-cell-primary">{item.product_name || "Item"}</td>
                     <td className="table-cell">{item.quantity}</td>
                     <td className="table-cell">{item.unit}</td>
                   </tr>

@@ -23,6 +23,12 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
+    // Handle network errors (server down, no internet)
+    if (!error.response) {
+      error.message = 'Network error. Please check your connection and try again.';
+      return Promise.reject(error);
+    }
+
     const originalRequest = error.config;
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;

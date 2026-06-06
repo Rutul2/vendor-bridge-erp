@@ -9,8 +9,8 @@ import { useState } from "react";
 import { Eye, EyeOff } from "lucide-react";
 
 const loginSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  password: z.string().min(6, "Password must be at least 6 characters"),
+  email: z.string().trim().email("Invalid email address"),
+  password: z.string().min(1, "Password is required"),
 });
 
 export default function Login() {

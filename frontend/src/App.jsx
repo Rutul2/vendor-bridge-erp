@@ -1,7 +1,7 @@
-// src/App.jsx
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import DashboardLayout from "./layouts/DashboardLayout.jsx";
 import { useAuthStore } from "./store/authStore";
+import RoleRoute from "./components/RoleRoute.jsx";
 
 // Auth
 import Login from "./features/auth/Login.jsx";
@@ -41,11 +41,6 @@ import InvoiceDetail from "./features/invoices/InvoiceDetail.jsx";
 import Reports from "./features/reports/Reports.jsx";
 import ActivityLogs from "./features/activity/ActivityLogs.jsx";
 
-const ProtectedRoute = ({ children }) => {
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
-  return isAuthenticated ? children : <Navigate to="/login" />;
-};
-
 export default function App() {
   return (
     <BrowserRouter>
@@ -59,31 +54,31 @@ export default function App() {
         <Route
           path="/"
           element={
-            <ProtectedRoute>
+            <RoleRoute>
               <DashboardLayout />
-            </ProtectedRoute>
+            </RoleRoute>
           }
         >
           <Route index element={<Dashboard />} />
 
           {/* Vendors */}
-          <Route path="vendors" element={<VendorList />} />
+          <Route path="vendors" element={<RoleRoute allowedRoles={['ADMIN', 'PROCUREMENT_OFFICER', 'MANAGER']}><VendorList /></RoleRoute>} />
           <Route path="vendors/:id" element={<VendorDetail />} />
 
           {/* RFQs */}
           <Route path="rfqs" element={<RFQList />} />
-          <Route path="rfqs/create" element={<RFQCreate />} />
+          <Route path="rfqs/create" element={<RoleRoute allowedRoles={['PROCUREMENT_OFFICER']}><RFQCreate /></RoleRoute>} />
           <Route path="rfqs/:id" element={<RFQDetail />} />
 
           {/* Quotations */}
           <Route path="quotations" element={<QuotationList />} />
-          <Route path="quotations/submit/:rfqId" element={<QuotationSubmit />} />
-          <Route path="quotations/compare/:rfqId" element={<QuotationComparison />} />
+          <Route path="quotations/submit/:rfqId" element={<RoleRoute allowedRoles={['VENDOR']}><QuotationSubmit /></RoleRoute>} />
+          <Route path="quotations/compare/:rfqId" element={<RoleRoute allowedRoles={['ADMIN', 'PROCUREMENT_OFFICER', 'MANAGER']}><QuotationComparison /></RoleRoute>} />
           <Route path="quotations/:id" element={<QuotationSubmit />} />
 
           {/* Approvals */}
-          <Route path="approvals" element={<ApprovalList />} />
-          <Route path="approvals/:id" element={<ApprovalDetail />} />
+          <Route path="approvals" element={<RoleRoute allowedRoles={['MANAGER']}><ApprovalList /></RoleRoute>} />
+          <Route path="approvals/:id" element={<RoleRoute allowedRoles={['MANAGER', 'PROCUREMENT_OFFICER']}><ApprovalDetail /></RoleRoute>} />
 
           {/* Purchase Orders */}
           <Route path="purchase-orders" element={<PurchaseOrderList />} />
@@ -94,8 +89,8 @@ export default function App() {
           <Route path="invoices/:id" element={<InvoiceDetail />} />
 
           {/* Reports & Activity */}
-          <Route path="reports" element={<Reports />} />
-          <Route path="activity" element={<ActivityLogs />} />
+          <Route path="reports" element={<RoleRoute allowedRoles={['ADMIN', 'MANAGER', 'PROCUREMENT_OFFICER']}><Reports /></RoleRoute>} />
+          <Route path="activity" element={<RoleRoute allowedRoles={['ADMIN']}><ActivityLogs /></RoleRoute>} />
         </Route>
       </Routes>
     </BrowserRouter>

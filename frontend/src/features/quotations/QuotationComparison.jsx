@@ -1,17 +1,22 @@
-// src/features/quotations/QuotationComparison.jsx
 import { useState, useEffect } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, Star, CheckCircle } from "lucide-react";
 import LoadingSpinner from "../../components/LoadingSpinner";
 import { quotationService } from "./quotationService";
 import { rfqService } from "../rfqs/rfqService";
+import { userService } from "../users/userService";
+import { approvalService } from "../approvals/approvalService";
 
 export default function QuotationComparison() {
   const { rfqId } = useParams();
+  const navigate = useNavigate();
   const [rfq, setRfq] = useState(null);
   const [quotations, setQuotations] = useState([]);
+  const [managers, setManagers] = useState([]);
+  const [selectedManager, setSelectedManager] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -22,6 +27,12 @@ export default function QuotationComparison() {
 
         const quotationsData = await quotationService.getAll({ rfq_id: rfqId });
         setQuotations(quotationsData.data || []);
+
+        const usersData = await userService.getAll({ role: 'MANAGER' });
+        setManagers(usersData.data || []);
+        if (usersData.data?.length > 0) {
+          setSelectedManager(usersData.data[0].id);
+        }
       } catch (err) {
         console.error("Failed to fetch data:", err);
         setError("Failed to load quotation comparison");
@@ -48,6 +59,23 @@ export default function QuotationComparison() {
     (minI, q, i, arr) => (q.total_amount < arr[minI].total_amount ? i : minI),
     0,
   );
+
+  const handleApprove = async (quotationId) => {
+    if (!selectedManager) return alert("Please select a manager for approval");
+    try {
+      setSubmitting(true);
+      await approvalService.create({
+        quotation_id: quotationId,
+        manager_id: selectedManager,
+      });
+      navigate("/rfqs");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to send for approval");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const criteria = [
     {
@@ -77,6 +105,16 @@ export default function QuotationComparison() {
         <p className="page-subtitle">
           RFQ: {rfq.title} — {quotations.length} quotations received
         </p>
+      </div>
+
+      <div className="card mb-6">
+        <h3 className="text-sm font-semibold text-textDim uppercase tracking-wider mb-3">Approval Workflow Settings</h3>
+        <label className="input-label">Select Manager for Approval</label>
+        <select value={selectedManager} onChange={(e) => setSelectedManager(e.target.value)} className="input-field max-w-md">
+          {managers.map(m => (
+            <option key={m.id} value={m.id}>{m.name} ({m.email})</option>
+          ))}
+        </select>
       </div>
 
       <div className="card p-0 overflow-hidden">
@@ -169,12 +207,14 @@ export default function QuotationComparison() {
               className={`flex-1 p-4 text-center ${i === lowestIdx ? "bg-success-500/5" : ""}`}
             >
               <button
+                disabled={submitting}
+                onClick={() => handleApprove(q.id)}
                 className={`inline-flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-lg transition-all ${
                   i === lowestIdx ? "btn-success" : "btn-secondary"
                 }`}
               >
                 <CheckCircle size={14} />
-                {i === lowestIdx ? "Select & Approve" : "Select"}
+                {submitting ? "Sending..." : (i === lowestIdx ? "Select & Approve" : "Select")}
               </button>
             </div>
           ))}

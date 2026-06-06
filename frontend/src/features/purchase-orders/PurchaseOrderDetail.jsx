@@ -3,6 +3,7 @@ import { ArrowLeft, Receipt, Calendar, Hash } from "lucide-react";
 import { useState, useEffect } from "react";
 import StatusBadge from "../../components/StatusBadge";
 import { poService } from "./poService";
+import { invoiceService } from "../invoices/invoiceService";
 
 export default function PurchaseOrderDetail() {
   const { id } = useParams();
@@ -10,6 +11,7 @@ export default function PurchaseOrderDetail() {
   const [po, setPo] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [generating, setGenerating] = useState(false);
 
   useEffect(() => {
     const fetchPo = async () => {
@@ -44,6 +46,24 @@ export default function PurchaseOrderDetail() {
   const gstPercent = 18;
   const gstAmount = (subtotal * gstPercent) / 100;
   const grandTotal = po.quotation?.grand_total || (subtotal + gstAmount);
+
+  const handleGenerateInvoice = async () => {
+    try {
+      setGenerating(true);
+      const res = await invoiceService.create({
+        purchase_order_id: po.id,
+        vendor_id: po.vendor_id,
+        tax_amount: gstAmount,
+        total_amount: grandTotal,
+      });
+      navigate(`/invoices/${res.data.id}`);
+    } catch (err) {
+      console.error(err);
+      alert(err.response?.data?.message || "Failed to generate Invoice");
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   return (
     <div className="page-container max-w-4xl mx-auto">
@@ -96,8 +116,8 @@ export default function PurchaseOrderDetail() {
         </div>
 
         <div className="flex gap-3 pt-6 mt-6 border-t border-border">
-          <button onClick={() => navigate("/invoices")} className="btn-primary inline-flex items-center gap-2">
-            <Receipt size={16} /> Generate Invoice
+          <button onClick={handleGenerateInvoice} disabled={generating} className="btn-primary inline-flex items-center gap-2">
+            <Receipt size={16} /> {generating ? "Generating..." : "Generate Invoice"}
           </button>
         </div>
       </div>

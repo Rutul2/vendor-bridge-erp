@@ -7,10 +7,12 @@ import EmptyState from "../../components/EmptyState";
 import Modal from "../../components/Modal";
 import VendorForm from "./VendorForm";
 import { vendorService } from "./vendorService";
+import { useAuthStore } from "../../store/authStore";
 
 const tabs = ["All", "ACTIVE", "PENDING", "BLOCKED"];
 
 export default function VendorList() {
+  const { user } = useAuthStore();
   const [vendors, setVendors] = useState([]);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("All");
@@ -60,9 +62,11 @@ export default function VendorList() {
           <h1 className="page-title">Vendors</h1>
           <p className="page-subtitle">Manage supplier profiles and registrations</p>
         </div>
-        <button onClick={() => setShowForm(true)} className="btn-primary inline-flex items-center gap-2">
-          <Plus size={16} /> Add Vendor
-        </button>
+        {user?.role === "ADMIN" && (
+          <button onClick={() => setShowForm(true)} className="btn-primary inline-flex items-center gap-2">
+            <Plus size={16} /> Add Vendor
+          </button>
+        )}
       </div>
 
       <SearchBar value={search} onChange={setSearch} placeholder="Search by name, GST number, category..." />

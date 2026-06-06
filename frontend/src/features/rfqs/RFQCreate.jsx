@@ -13,6 +13,10 @@ export default function RFQCreate() {
   const [step, setStep] = useState(1);
   const [selectedVendors, setSelectedVendors] = useState([]);
   const [vendorsList, setVendorsList] = useState([]);
+  const [submitError, setSubmitError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState("DRAFT");
+  const [attachments, setAttachments] = useState([]);
 
   useEffect(() => {
     vendorService.getAll({ status: 'ACTIVE' }).then(res => setVendorsList(res.data?.items || []));
@@ -20,7 +24,7 @@ export default function RFQCreate() {
 
   const { register, control, handleSubmit, formState: { errors }, trigger, getValues } = useForm({
     resolver: zodResolver(rfqSchema),
-    defaultValues: { lineItems: [{ item: "", quantity: 1, unit: "NOS" }], assignedVendors: [] },
+    defaultValues: { lineItems: [{ item: "", quantity: 1, unit: "NOS", estimatedPrice: 0 }], assignedVendors: [] },
   });
 
   const { fields, append, remove } = useFieldArray({ control, name: "lineItems" });
@@ -49,24 +53,39 @@ export default function RFQCreate() {
     );
   };
 
+  const handleFileUpload = (e) => {
+    if (e.target.files?.length > 0) {
+      const newFiles = Array.from(e.target.files).map(f => f.name);
+      setAttachments(prev => [...prev, ...newFiles]);
+    }
+  };
+
   const onSubmit = async (data) => {
     try {
+      setSubmitError("");
+      setIsSubmitting(true);
       const payload = {
         title: data.title,
         category: data.category,
         deadline: new Date(data.deadline).toISOString(),
         description: data.description,
+        status: submitStatus,
         items: data.lineItems.map(item => ({
-          item_name: item.item,
+          product_name: item.item,
           quantity: item.quantity,
-          unit: item.unit
+          unit: item.unit,
+          estimated_price: item.estimatedPrice
         })),
-        vendors: selectedVendors.map(v => v.id)
+        vendor_ids: selectedVendors.map(v => v.id),
+        attachments: attachments
       };
       await rfqService.create(payload);
       navigate("/rfqs");
     } catch (error) {
       console.error("Failed to create RFQ", error);
+      setSubmitError(error.response?.data?.message || error.response?.data?.errors?.[0] || "Failed to create RFQ. Please check your inputs.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -82,6 +101,9 @@ export default function RFQCreate() {
       <StepIndicator steps={steps} currentStep={step} />
 
       <form onSubmit={handleSubmit(onSubmit)} className="card">
+        {submitError && (
+          <div className="mb-4 p-3 bg-danger-500/10 border border-danger-500/20 text-danger-400 text-sm rounded-lg">{submitError}</div>
+        )}
         {/* Step 1: RFQ Details */}
         {step === 1 && (
           <div className="space-y-5 animate-fade-in">
@@ -105,7 +127,7 @@ export default function RFQCreate() {
               </div>
               <div>
                 <label className="input-label">Deadline *</label>
-                <input type="date" {...register("deadline")} className="input-field" />
+                <input type="date" {...register("deadline")} className="input-field" min={new Date().toISOString().split('T')[0]} />
                 {errors.deadline && <p className="text-danger-400 text-xs mt-1">{errors.deadline.message}</p>}
               </div>
             </div>
@@ -122,7 +144,7 @@ export default function RFQCreate() {
             <div>
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-base font-semibold text-white">Line Items</h3>
-                <button type="button" onClick={() => append({ item: "", quantity: 1, unit: "NOS" })} className="btn-ghost text-primary-400 text-xs inline-flex items-center gap-1">
+                <button type="button" onClick={() => append({ item: "", quantity: 1, unit: "NOS", estimatedPrice: 0 })} className="btn-ghost text-primary-400 text-xs inline-flex items-center gap-1">
                   <Plus size={14} /> Add Item
                 </button>
               </div>
@@ -133,6 +155,7 @@ export default function RFQCreate() {
                       <th className="table-header">Item</th>
                       <th className="table-header w-24">Qty</th>
                       <th className="table-header w-28">Unit</th>
+                      <th className="table-header w-32">Est. Price (₹)</th>
                       <th className="table-header w-10"></th>
                     </tr>
                   </thead>
@@ -153,6 +176,9 @@ export default function RFQCreate() {
                             <option value="ROLL">ROLL</option>
                             <option value="REAM">REAM</option>
                           </select>
+                        </td>
+                        <td className="py-2 pr-2">
+                          <input type="number" {...register(`lineItems.${index}.estimatedPrice`, { valueAsNumber: true })} className="input-field" placeholder="0" />
                         </td>
                         <td className="py-2">
                           {fields.length > 1 && (
@@ -225,13 +251,23 @@ export default function RFQCreate() {
               </div>
             </div>
 
-            {/* Attachments placeholder */}
+            {/* Attachments */}
             <div>
-              <h4 className="text-sm font-medium text-textMuted mb-2">Attachments</h4>
-              <div className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary-500/30 transition-colors cursor-pointer">
+              <h4 className="text-sm font-medium text-textMuted mb-2">Attachments ({attachments.length})</h4>
+              {attachments.length > 0 && (
+                <ul className="mb-3 space-y-1">
+                  {attachments.map((file, i) => (
+                    <li key={i} className="text-sm text-textMain flex items-center gap-2">
+                      <div className="w-1.5 h-1.5 rounded-full bg-primary-400"></div> {file}
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <label className="border-2 border-dashed border-border rounded-xl p-8 text-center hover:border-primary-500/30 transition-colors cursor-pointer block">
                 <Upload size={24} className="mx-auto text-textDim mb-2" />
-                <p className="text-sm text-textMuted">Drag & drop files or click to upload</p>
-              </div>
+                <p className="text-sm text-textMuted">Click to upload files</p>
+                <input type="file" multiple className="hidden" onChange={handleFileUpload} />
+              </label>
             </div>
           </div>
         )}
@@ -246,8 +282,8 @@ export default function RFQCreate() {
               <button type="button" onClick={nextStep} className="btn-primary">Continue</button>
             ) : (
               <>
-                <button type="submit" className="btn-secondary">Save as Draft</button>
-                <button type="submit" className="btn-primary">Save & Send to Vendors</button>
+                <button type="submit" onClick={() => setSubmitStatus("DRAFT")} disabled={isSubmitting} className="btn-secondary">Save as Draft</button>
+                <button type="submit" onClick={() => setSubmitStatus("OPEN")} disabled={isSubmitting} className="btn-primary">{isSubmitting ? "Submitting..." : "Save & Send to Vendors"}</button>
               </>
             )}
           </div>

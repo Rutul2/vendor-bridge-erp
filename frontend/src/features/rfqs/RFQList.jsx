@@ -5,8 +5,10 @@ import SearchBar from "../../components/SearchBar";
 import StatusBadge from "../../components/StatusBadge";
 import EmptyState from "../../components/EmptyState";
 import { rfqService } from "./rfqService";
+import { useAuthStore } from "../../store/authStore";
 
 export default function RFQList() {
+  const { user } = useAuthStore();
   const [rfqs, setRfqs] = useState([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
@@ -39,9 +41,11 @@ export default function RFQList() {
           <h1 className="page-title">Request for Quotations</h1>
           <p className="page-subtitle">Manage and track procurement RFQs</p>
         </div>
-        <Link to="/rfqs/create" className="btn-primary inline-flex items-center gap-2">
-          <Plus size={16} /> Create RFQ
-        </Link>
+        {user?.role === 'PROCUREMENT_OFFICER' && (
+          <Link to="/rfqs/create" className="btn-primary inline-flex items-center gap-2">
+            <Plus size={16} /> Create RFQ
+          </Link>
+        )}
       </div>
 
       <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
@@ -82,9 +86,16 @@ export default function RFQList() {
                   <td className="table-cell">{rfq.quotations?.length || 0} received</td>
                   <td className="table-cell"><StatusBadge status={rfq.status} /></td>
                   <td className="table-cell text-right">
-                    <Link to={`/rfqs/${rfq.id}`} className="inline-flex items-center gap-1.5 text-primary-400 hover:text-primary-300 text-sm font-medium">
-                      <Eye size={14} /> View
-                    </Link>
+                    <div className="flex items-center justify-end gap-4">
+                      <Link to={`/rfqs/${rfq.id}`} className="inline-flex items-center gap-1.5 text-primary-400 hover:text-primary-300 text-sm font-medium">
+                        <Eye size={14} /> View
+                      </Link>
+                      {user?.role === 'VENDOR' && rfq.status !== 'CLOSED' && (
+                        <Link to={`/quotations/submit/${rfq.id}`} className="inline-flex items-center gap-1.5 text-success-400 hover:text-success-300 text-sm font-medium">
+                          <FileText size={14} /> Submit
+                        </Link>
+                      )}
+                    </div>
                   </td>
                 </tr>
               ))

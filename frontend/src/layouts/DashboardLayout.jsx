@@ -1,4 +1,3 @@
-// src/layouts/DashboardLayout.jsx
 import { Outlet, Link, useNavigate, useLocation } from "react-router-dom";
 import { useAuthStore } from "../store/authStore";
 import { useState } from "react";
@@ -7,18 +6,17 @@ import {
   CheckCircle2, ShoppingCart, Receipt, BarChart3, Activity,
   Bell, LogOut, Menu, X, ChevronRight
 } from "lucide-react";
-import { MOCK_NOTIFICATIONS } from "../utils/mockData";
 
 const navItems = [
-  { name: "Dashboard", path: "/", icon: LayoutDashboard },
-  { name: "Vendors", path: "/vendors", icon: Users },
-  { name: "RFQs", path: "/rfqs", icon: FileText },
-  { name: "Quotations", path: "/quotations", icon: MessageSquareQuote },
-  { name: "Approvals", path: "/approvals", icon: CheckCircle2 },
-  { name: "Purchase Orders", path: "/purchase-orders", icon: ShoppingCart },
-  { name: "Invoices", path: "/invoices", icon: Receipt },
-  { name: "Reports", path: "/reports", icon: BarChart3 },
-  { name: "Activity", path: "/activity", icon: Activity },
+  { name: "Dashboard", path: "/", icon: LayoutDashboard, roles: ['ADMIN', 'PROCUREMENT_OFFICER', 'MANAGER', 'VENDOR'] },
+  { name: "Vendors", path: "/vendors", icon: Users, roles: ['ADMIN', 'PROCUREMENT_OFFICER'] },
+  { name: "RFQs", path: "/rfqs", icon: FileText, roles: ['ADMIN', 'PROCUREMENT_OFFICER', 'VENDOR'] },
+  { name: "Quotations", path: "/quotations", icon: MessageSquareQuote, roles: ['ADMIN', 'PROCUREMENT_OFFICER', 'VENDOR'] },
+  { name: "Approvals", path: "/approvals", icon: CheckCircle2, roles: ['MANAGER'] },
+  { name: "Purchase Orders", path: "/purchase-orders", icon: ShoppingCart, roles: ['ADMIN', 'PROCUREMENT_OFFICER', 'VENDOR'] },
+  { name: "Invoices", path: "/invoices", icon: Receipt, roles: ['ADMIN', 'PROCUREMENT_OFFICER', 'VENDOR'] },
+  { name: "Reports", path: "/reports", icon: BarChart3, roles: ['ADMIN', 'PROCUREMENT_OFFICER'] },
+  { name: "Activity", path: "/activity", icon: Activity, roles: ['ADMIN'] },
 ];
 
 export default function DashboardLayout() {
@@ -28,7 +26,7 @@ export default function DashboardLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
 
-  const unreadCount = MOCK_NOTIFICATIONS.filter(n => !n.read).length;
+  const unreadCount = 0;
 
   const handleLogout = () => { logout(); navigate("/login"); };
 
@@ -59,7 +57,7 @@ export default function DashboardLayout() {
         </div>
 
         <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-          {navItems.map((item) => {
+          {navItems.filter(item => item.roles.includes(user?.role || 'VENDOR')).map((item) => {
             const Icon = item.icon;
             const isActive = item.path === "/" ? location.pathname === "/" : location.pathname.startsWith(item.path);
             return (
@@ -100,7 +98,7 @@ export default function DashboardLayout() {
         <div className="absolute top-0 left-1/3 w-96 h-96 bg-primary-600/5 rounded-full blur-[120px] -z-0 pointer-events-none" />
 
         {/* Header */}
-        <header className="h-14 bg-surface/70 backdrop-blur-md border-b border-border flex items-center justify-between px-4 sm:px-6 z-10 flex-shrink-0">
+        <header className="h-14 bg-surface/70 backdrop-blur-md border-b border-border flex items-center justify-between px-4 sm:px-6 z-30 flex-shrink-0 relative">
           <div className="flex items-center gap-3">
             <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 rounded-lg hover:bg-surfaceHighlight">
               <Menu size={20} className="text-textMuted" />
@@ -137,12 +135,9 @@ export default function DashboardLayout() {
                       <h3 className="text-sm font-semibold text-white">Notifications</h3>
                     </div>
                     <div className="max-h-64 overflow-y-auto">
-                      {MOCK_NOTIFICATIONS.slice(0, 4).map((n) => (
-                        <div key={n._id} className={`px-4 py-3 border-b border-border/50 hover:bg-surfaceHighlight transition-colors ${!n.read ? 'bg-primary-500/5' : ''}`}>
-                          <p className="text-sm text-textMain font-medium">{n.title}</p>
-                          <p className="text-xs text-textMuted mt-0.5">{n.message}</p>
-                        </div>
-                      ))}
+                      <div className="px-4 py-8 text-center text-textMuted text-sm">
+                        No new notifications
+                      </div>
                     </div>
                     <Link to="/activity" onClick={() => setNotifOpen(false)} className="block px-4 py-2.5 text-center text-xs font-medium text-primary-400 hover:bg-surfaceHighlight transition-colors rounded-b-xl">
                       View all notifications

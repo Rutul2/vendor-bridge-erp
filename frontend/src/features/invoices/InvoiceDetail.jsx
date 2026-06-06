@@ -62,7 +62,7 @@ export default function InvoiceDetail() {
       {/* Action buttons */}
       <div className="no-print flex gap-3 flex-wrap">
         <button onClick={handlePrint} className="btn-secondary inline-flex items-center gap-2"><Printer size={16} /> Print Invoice</button>
-        <button className="btn-secondary inline-flex items-center gap-2"><Download size={16} /> Download PDF</button>
+        <button onClick={handlePrint} className="btn-secondary inline-flex items-center gap-2"><Download size={16} /> Download PDF</button>
         <button onClick={() => setEmailModal(true)} className="btn-primary inline-flex items-center gap-2"><Mail size={16} /> Send via Email</button>
       </div>
 
