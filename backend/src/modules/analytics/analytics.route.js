@@ -6,9 +6,9 @@ import { dashboardHandler, monthlyTrendsHandler, spendingHandler, vendorsHandler
 const router = express.Router();
 router.use(authMiddleware);
 
-router.get('/dashboard', authorize('ADMIN', 'MANAGER', 'PROCUREMENT_OFFICER'), dashboardHandler);
+router.get('/dashboard', authorize('ADMIN', 'MANAGER', 'PROCUREMENT_OFFICER', 'VENDOR'), dashboardHandler);
 router.get('/vendors', authorize('ADMIN', 'MANAGER', 'PROCUREMENT_OFFICER'), vendorsHandler);
-router.get('/spending', authorize('ADMIN', 'MANAGER', 'PROCUREMENT_OFFICER'), spendingHandler);
+router.get('/spending-summary', authorize('ADMIN', 'MANAGER', 'PROCUREMENT_OFFICER'), spendingHandler);
 router.get('/monthly-trends', authorize('ADMIN', 'MANAGER', 'PROCUREMENT_OFFICER'), monthlyTrendsHandler);
 
 export default router;

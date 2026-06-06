@@ -2,11 +2,11 @@ import { logActivity } from '../../utils/activityLogger.js';
 import { findQuotationsByRfq } from '../quotations/quotations.repository.js';
 import { assignVendors, countRfqs, createAttachment, createRfq, deleteRfq, findAttachmentsByRfq, findRfqById, findRfqs, updateRfq } from './rfqs.repository.js';
 
-export const listRfqs = async ({ page, limit, search, status, created_by }) => {
+export const listRfqs = async ({ page, limit, search, status, created_by, vendorId }) => {
   const skip = (Number(page || 1) - 1) * Number(limit || 20);
   const take = Number(limit || 20);
-  const items = await findRfqs({ skip, take, search, status, createdBy: created_by });
-  const total = await countRfqs({ search, status, createdBy: created_by });
+  const items = await findRfqs({ skip, take, search, status, createdBy: created_by, vendorId });
+  const total = await countRfqs({ search, status, createdBy: created_by, vendorId });
   return { items, total, page: Number(page || 1), limit: take };
 };
 
@@ -16,13 +16,16 @@ export const getRfq = async (id) => {
   return rfq;
 };
 
-export const createNewRfq = async ({ vendor_ids, items, ...payload }, user) => {
+export const createNewRfq = async ({ vendor_ids, items, attachments, ...payload }, user) => {
+  // If vendors are assigned AND user sends to vendors, mark as OPEN; otherwise DRAFT
+  const status = (vendor_ids && vendor_ids.length > 0 && payload.status === 'OPEN') ? 'OPEN' : (payload.status || 'DRAFT');
   const rfq = await createRfq({
     ...payload,
     created_by: user.id,
-    status: payload.status || 'DRAFT',
+    status,
     items: { create: items },
     vendors: vendor_ids ? { create: vendor_ids.map((vendor_id) => ({ vendor_id, invitation_status: 'PENDING' })) } : undefined,
+    attachments: attachments && attachments.length > 0 ? { create: attachments.map(f => ({ file_name: f, file_url: f })) } : undefined,
   });
   await logActivity({ user_id: user.id, entity_type: 'RFQ', entity_id: rfq.id, action: 'CREATE', new_data: rfq });
   return rfq;

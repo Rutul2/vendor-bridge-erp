@@ -2,7 +2,8 @@ import { successResponse } from '../../utils/response.js';
 import { createNewRfq, getQuotationComparison, getRfq, listRfqAttachments, listRfqs, reassignRfqVendors, removeRfq, updateExistingRfq, uploadRfqAttachment } from './rfqs.service.js';
 
 export const listRfqsHandler = async (req, res) => {
-  const data = await listRfqs({ ...req.query, created_by: req.query.created_by });
+  const vendorId = req.user.role.name === 'VENDOR' ? req.user.vendor_id : undefined;
+  const data = await listRfqs({ ...req.query, created_by: req.query.created_by, vendorId });
   return successResponse(res, 'RFQs retrieved successfully', data);
 };
 

@@ -2,7 +2,7 @@ import { successResponse } from '../../utils/response.js';
 import { getDashboardSummary, getMonthlyTrends, getSpendingSummary, getVendorPerformance } from './analytics.service.js';
 
 export const dashboardHandler = async (req, res) => {
-  const data = await getDashboardSummary();
+  const data = await getDashboardSummary(req.user);
   return successResponse(res, 'Dashboard analytics retrieved successfully', data);
 };
 

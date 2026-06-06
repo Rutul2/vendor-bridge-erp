@@ -1,17 +1,19 @@
 import Joi from 'joi';
 
 export const rfqItemSchema = Joi.object({
-  product_name: Joi.string().required(),
-  description: Joi.string().optional().allow('', null),
-  quantity: Joi.number().integer().positive().required(),
-  unit: Joi.string().required(),
-  estimated_price: Joi.number().positive().required(),
+  product_name: Joi.string().trim().min(2).required(),
+  description: Joi.string().trim().optional().allow('', null),
+  quantity: Joi.number().integer().positive().min(1).required(),
+  unit: Joi.string().trim().required(),
+  estimated_price: Joi.number().positive().min(0).required(),
 });
 
 export const rfqCreateSchema = Joi.object({
-  title: Joi.string().required(),
-  description: Joi.string().optional().allow('', null),
-  deadline: Joi.date().iso().required(),
+  title: Joi.string().trim().min(5).required(),
+  description: Joi.string().trim().optional().allow('', null),
+  deadline: Joi.date().iso().min('now').required().messages({
+    'date.min': 'Deadline cannot be in the past'
+  }),
   status: Joi.string().valid('DRAFT','OPEN','UNDER_REVIEW','PENDING_APPROVAL','APPROVED','REJECTED','COMPLETED').optional(),
   items: Joi.array().items(rfqItemSchema).min(1).required(),
   vendor_ids: Joi.array().items(Joi.string().uuid()).optional(),
@@ -19,9 +21,11 @@ export const rfqCreateSchema = Joi.object({
 });
 
 export const rfqUpdateSchema = Joi.object({
-  title: Joi.string().optional(),
-  description: Joi.string().optional().allow('', null),
-  deadline: Joi.date().iso().optional(),
+  title: Joi.string().trim().min(5).optional(),
+  description: Joi.string().trim().optional().allow('', null),
+  deadline: Joi.date().iso().min('now').optional().messages({
+    'date.min': 'Deadline cannot be in the past'
+  }),
   status: Joi.string().valid('DRAFT','OPEN','UNDER_REVIEW','PENDING_APPROVAL','APPROVED','REJECTED','COMPLETED').optional(),
   items: Joi.array().items(rfqItemSchema).min(1).optional(),
   vendor_ids: Joi.array().items(Joi.string().uuid()).optional(),

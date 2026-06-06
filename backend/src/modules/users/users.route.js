@@ -11,9 +11,11 @@ router.use(authMiddleware);
 
 router.get('/me', getMeHandler);
 
+// Allow Procurement Officers to list users so they can pick a Manager for approvals
+router.get('/', authorize('ADMIN', 'PROCUREMENT_OFFICER'), listUsersHandler);
+router.get('/:id', authorize('ADMIN'), getUserHandler);
+
 router.use(authorize('ADMIN'));
-router.get('/', listUsersHandler);
-router.get('/:id', getUserHandler);
 router.post('/', validate(userCreateSchema), createUserHandler);
 router.put('/:id', validate(userUpdateSchema), updateUserHandler);
 router.delete('/:id', deleteUserHandler);

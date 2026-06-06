@@ -1,6 +1,6 @@
 import prisma from '../../config/database.js';
 
-export const findRfqs = async ({ skip, take, search, status, createdBy }) => {
+export const findRfqs = async ({ skip, take, search, status, createdBy, vendorId }) => {
   const where = {
     AND: [
       search
@@ -8,6 +8,7 @@ export const findRfqs = async ({ skip, take, search, status, createdBy }) => {
         : {},
       status ? { status } : {},
       createdBy ? { created_by: createdBy } : {},
+      vendorId ? { vendors: { some: { vendor_id: vendorId } } } : {},
     ],
   };
   return prisma.rfq.findMany({
@@ -19,7 +20,7 @@ export const findRfqs = async ({ skip, take, search, status, createdBy }) => {
   });
 };
 
-export const countRfqs = async ({ search, status, createdBy }) => {
+export const countRfqs = async ({ search, status, createdBy, vendorId }) => {
   const where = {
     AND: [
       search
@@ -27,6 +28,7 @@ export const countRfqs = async ({ search, status, createdBy }) => {
         : {},
       status ? { status } : {},
       createdBy ? { created_by: createdBy } : {},
+      vendorId ? { vendors: { some: { vendor_id: vendorId } } } : {},
     ],
   };
   return prisma.rfq.count({ where });

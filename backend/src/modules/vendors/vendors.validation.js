@@ -2,7 +2,7 @@ import Joi from 'joi';
 
 export const vendorCreateSchema = Joi.object({
   company_name: Joi.string().required(),
-  vendor_code: Joi.string().required(),
+  vendor_code: Joi.string().optional(),
   category: Joi.string().required(),
   gst_number: Joi.string().optional().allow('', null),
   email: Joi.string().email().required(),

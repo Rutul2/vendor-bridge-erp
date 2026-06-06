@@ -16,6 +16,10 @@ export const getVendor = async (id) => {
 };
 
 export const createNewVendor = async (data, user) => {
+  if (!data.vendor_code) {
+    const randomSuffix = Math.floor(1000 + Math.random() * 9000);
+    data.vendor_code = `VND-${randomSuffix}`;
+  }
   const vendor = await createVendor(data);
   await logActivity({ user_id: user?.id, entity_type: 'Vendor', entity_id: vendor.id, action: 'CREATED', new_data: vendor });
   return vendor;

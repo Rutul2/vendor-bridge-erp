@@ -3,7 +3,11 @@ import { successResponse } from '../../utils/response.js';
 import { createNewInvoice, emailInvoice, getInvoice, getInvoicePdf, listInvoices, updateInvoiceStatus } from './invoices.service.js';
 
 export const listInvoicesHandler = async (req, res) => {
-  const data = await listInvoices(req.query);
+  const query = { ...req.query };
+  if (req.user.role.name === 'VENDOR' && req.user.vendor_id) {
+    query.vendor_id = req.user.vendor_id;
+  }
+  const data = await listInvoices(query);
   return successResponse(res, 'Invoices retrieved successfully', data);
 };
 

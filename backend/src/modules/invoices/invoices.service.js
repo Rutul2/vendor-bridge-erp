@@ -4,6 +4,7 @@ import { invoiceNotificationTemplate } from '../../utils/emailTemplates.js';
 import { generateIdCode } from '../../utils/generateNumber.js';
 import { generateInvoicePdf } from '../../utils/generatePdf.js';
 import { countInvoices, createInvoice, findInvoiceById, findInvoices, updateInvoice } from './invoices.repository.js';
+import prisma from '../../config/database.js';
 
 export const listInvoices = async ({ page, limit, status, vendor_id }) => {
   const skip = (Number(page || 1) - 1) * Number(limit || 20);
@@ -20,6 +21,19 @@ export const getInvoice = async (id) => {
 };
 
 export const createNewInvoice = async ({ purchase_order_id, vendor_id, tax_amount, total_amount, status }, user) => {
+  // Verify purchase order exists
+  const purchaseOrder = await prisma.purchaseOrder.findUnique({ where: { id: purchase_order_id } });
+  if (!purchaseOrder) throw { statusCode: 404, message: 'Purchase Order not found.' };
+  if (purchaseOrder.status === 'CANCELLED') {
+    throw { statusCode: 400, message: 'Cannot generate invoice for a cancelled Purchase Order.' };
+  }
+
+  // Prevent duplicate invoices for the same PO
+  const existingInvoice = await prisma.invoice.findFirst({ where: { purchase_order_id } });
+  if (existingInvoice) {
+    throw { statusCode: 400, message: 'An Invoice already exists for this Purchase Order.' };
+  }
+
   const invoiceNumber = generateIdCode('INV');
   const invoice = await createInvoice({
     invoice_number: invoiceNumber,
@@ -42,7 +56,7 @@ export const getInvoicePdf = async (id) => {
   return invoice.pdf_url;
 };
 
-export const emailInvoice = async (id, payload) => {
+export const emailInvoice = async (id, payload, user) => {
   const invoice = await findInvoiceById(id);
   if (!invoice) throw { statusCode: 404, message: 'Invoice not found' };
   const pdfPath = await getInvoicePdf(id);

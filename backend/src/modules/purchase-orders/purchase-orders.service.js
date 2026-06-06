@@ -1,6 +1,7 @@
 import { logActivity } from '../../utils/activityLogger.js';
 import { generateIdCode } from '../../utils/generateNumber.js';
 import { countPurchaseOrders, createPurchaseOrder, findPurchaseOrderById, findPurchaseOrders } from './purchase-orders.repository.js';
+import prisma from '../../config/database.js';
 
 export const listPurchaseOrders = async ({ page, limit, search, status, vendor_id }) => {
   const skip = (Number(page || 1) - 1) * Number(limit || 20);
@@ -17,6 +18,19 @@ export const getPurchaseOrder = async (id) => {
 };
 
 export const createNewPurchaseOrder = async ({ quotation_id, vendor_id, items }, user) => {
+  // Verify quotation exists and is APPROVED
+  const quotation = await prisma.quotation.findUnique({ where: { id: quotation_id } });
+  if (!quotation) throw { statusCode: 404, message: 'Quotation not found' };
+  if (quotation.status !== 'APPROVED') {
+    throw { statusCode: 400, message: 'Cannot create Purchase Order. The quotation must be approved first.' };
+  }
+
+  // Prevent duplicate POs for the same quotation
+  const existingPO = await prisma.purchaseOrder.findFirst({ where: { quotation_id } });
+  if (existingPO) {
+    throw { statusCode: 400, message: 'A Purchase Order already exists for this quotation.' };
+  }
+
   const po_number = generateIdCode('PO');
   const order = await createPurchaseOrder({
     po_number,

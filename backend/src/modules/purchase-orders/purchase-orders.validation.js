@@ -1,11 +1,11 @@
 import Joi from 'joi';
 
 export const purchaseOrderItemSchema = Joi.object({
-  product_name: Joi.string().required(),
-  quantity: Joi.number().integer().positive().required(),
-  unit_price: Joi.number().positive().required(),
+  product_name: Joi.string().trim().min(2).required(),
+  quantity: Joi.number().integer().positive().min(1).required(),
+  unit_price: Joi.number().positive().min(0).required(),
   tax: Joi.number().min(0).required(),
-  subtotal: Joi.number().positive().required(),
+  subtotal: Joi.number().positive().min(0).required(),
 });
 
 export const purchaseOrderCreateSchema = Joi.object({

@@ -2,7 +2,11 @@ import { successResponse } from '../../utils/response.js';
 import { createNewPurchaseOrder, getPurchaseOrder, listPurchaseOrders, updatePurchaseOrderStatus } from './purchase-orders.service.js';
 
 export const listPurchaseOrdersHandler = async (req, res) => {
-  const data = await listPurchaseOrders(req.query);
+  const query = { ...req.query };
+  if (req.user.role.name === 'VENDOR' && req.user.vendor_id) {
+    query.vendor_id = req.user.vendor_id;
+  }
+  const data = await listPurchaseOrders(query);
   return successResponse(res, 'Purchase orders retrieved successfully', data);
 };
 

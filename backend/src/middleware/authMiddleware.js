@@ -14,6 +14,10 @@ const authMiddleware = async (req, res, next) => {
     if (!user || !user.is_active) {
       return res.status(401).json({ success: false, message: 'Invalid credentials' });
     }
+    if (user.role.name === 'VENDOR') {
+      const vendor = await prisma.vendor.findFirst({ where: { email: user.email } });
+      if (vendor) user.vendor_id = vendor.id;
+    }
     req.user = user;
     next();
   } catch (error) {
